@@ -1,6 +1,9 @@
 use serde::Serialize;
+use tracing;
+use uuid::Uuid;
 
 use crate::{
+    models::user::User,
     repository::auth as auth_repo,
     utils::{auth_error::AuthError, util},
 };
@@ -13,23 +16,30 @@ pub struct LoginResult {
 }
 
 pub async fn login(username: String, password: String) -> Result<LoginResult, AuthError> {
-    let user = auth_repo::findUser(&username)
+    let user = auth_repo::find_user(&username)
         .await
-        .map_err(|_err| AuthError::DatabaseError)?
+        .map_err(|err| {
+            tracing::error!(error = ?err,"DB error during finding user {:?}", err);
+            AuthError::DatabaseError
+        })?
         .ok_or(AuthError::UserNotFound)?;
 
-    let is_valid =
-        util::verify_pass(password, user.password).map_err(|err|AuthError::VerifyPasswordError(err))?; // map_err(Auth::VerifyPasswordError) works same
+    let is_valid = util::verify_pass(password, user.password).map_err(|err| {
+        tracing::error!(error = ?err,"error during verifying password {:?}", err);
+        AuthError::VerifyPasswordError
+    })?;
 
     if !is_valid {
         return Err(AuthError::InvalidCredentials);
     }
 
-    let token = util::generate_access_token(user.id.clone())
-        .map_err(|_err| AuthError::TokenGenerationError)?;
+    let token = util::generate_access_token(&user.id).map_err(|err| {
+        tracing::error!(error = ?err,"error during generating access token: {:?}", err);
+        AuthError::TokenGenerationError
+    })?;
 
     Ok(LoginResult {
-        user_id: user.id,
+        user_id: user.id.to_string(),
         username: user.username,
         access_token: token,
     })
@@ -41,28 +51,81 @@ pub struct RegisterResult {
     pub email: String,
 }
 
+#[tracing::instrument(skip(password))]
 pub async fn register(
     email: String,
     username: String,
     password: String,
 ) -> Result<RegisterResult, AuthError> {
-    let existing_user = auth_repo::find_user_by_username_or_email(&username, &email)
+    let existing_user = auth_repo::check_user_exists(&username, &email)
         .await
-        .map_err(|_| AuthError::DatabaseError)?;
+        .map_err(|err| {
+            tracing::error!(error = ?err,"DB error during checking existing user {:?}", err);
+            AuthError::DatabaseError
+        })?;
 
-    if existing_user.is_some() {
-        return Err(AuthError::UserAlreadyExists);
+    if existing_user.username_exists {
+        tracing::warn!("Username already taken: {}", username);
+        return Err(AuthError::UsernameTaken);
     }
 
-    let hashed_pass = util::hash_password(password).map_err(|_| AuthError::HashingError)?;
+    if existing_user.email_exists {
+        tracing::warn!("Email already taken: {}", email);
+        return Err(AuthError::EmailTaken);
+    }
+
+    let hashed_pass = util::hash_password(password).map_err(|err| {
+        tracing::error!(error = ?err,"error during hashing password {:?}", err);
+        AuthError::HashingError
+    })?;
 
     let user = auth_repo::create_user(&email, &username, &hashed_pass)
         .await
-        .map_err(|_| AuthError::DatabaseError)?
-        .ok_or(AuthError::DatabaseError)?;
+        .map_err(|err| {
+            if let sqlx::Error::Database(db_err) = &err {
+                if db_err.code() == Some("23505".into()) {
+                    let msg = db_err.message();
+
+                    if msg.contains("username") {
+                        tracing::error!(error = ?err , "UserName already exists for {} {:?}",username,err);
+                        return AuthError::UsernameTaken;
+                    }
+                    if msg.contains("email") {
+                        tracing::error!(error = ?err , "email already exists for {} {:?}",email,err);
+                        return AuthError::EmailTaken;
+                    }
+                }
+            }
+
+            tracing::error!(error = ?err,"DB error during creating user: {:?}", err);
+            AuthError::DatabaseError
+        })?;
 
     Ok(RegisterResult {
-        id: user.id,
+        id: user.id.to_string(),
         email: user.email,
     })
+}
+
+pub async fn delete_user(user_id: Uuid) -> Result<User, AuthError> {
+    let deleted_user = auth_repo::delete_user(&user_id).await.map_err(|err| {
+        if matches!(err, sqlx::Error::RowNotFound) {
+            tracing::warn!(%user_id, "Delete failed: User does not exist");
+            return AuthError::UserNotFound;
+        }
+
+        tracing::error!(%err, "Unexpected DB failure during deletion");
+        AuthError::DatabaseError
+    })?;
+
+    Ok(deleted_user)
+}
+
+pub async fn list_users() -> Result<Vec<User>, AuthError> {
+    let users = auth_repo::list_users().await.map_err(|err| {
+        tracing::error!(%err, "DB error during getting all users");
+        AuthError::DatabaseError
+    })?;
+
+    Ok(users)
 }

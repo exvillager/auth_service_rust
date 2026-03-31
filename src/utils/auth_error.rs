@@ -21,11 +21,13 @@ impl IntoResponse for ApiErr {
 pub enum AuthError {
     InvalidCredentials,
     UserNotFound,
-    UserAlreadyExists,
+    // UserAlreadyExists,
     HashingError,
     DatabaseError,
-    VerifyPasswordError(err),
+    VerifyPasswordError,
     TokenGenerationError,
+    UsernameTaken,
+    EmailTaken,
 }
 
 impl From<AuthError> for ApiErr {
@@ -39,10 +41,10 @@ impl From<AuthError> for ApiErr {
                 status: StatusCode::NOT_FOUND,
                 message: "User not found".to_string(),
             },
-            AuthError::UserAlreadyExists => ApiErr {
-                status: StatusCode::CONFLICT,
-                message: "User already exists".to_string(),
-            },
+            // AuthError::UserAlreadyExists => ApiErr {
+            //     status: StatusCode::CONFLICT,
+            //     message: "User already exists".to_string(),
+            // },
             AuthError::HashingError => ApiErr {
                 status: StatusCode::INTERNAL_SERVER_ERROR,
                 message: "Password hashing failed".to_string(),
@@ -51,13 +53,21 @@ impl From<AuthError> for ApiErr {
                 status: StatusCode::INTERNAL_SERVER_ERROR,
                 message: "Database error".to_string(),
             },
-            AuthError::VerifyPasswordError(_) => ApiErr {
+            AuthError::VerifyPasswordError => ApiErr {
                 status: StatusCode::INTERNAL_SERVER_ERROR,
                 message: "Password verification failed".to_string(),
             },
             AuthError::TokenGenerationError => ApiErr {
                 status: StatusCode::INTERNAL_SERVER_ERROR,
                 message: "Token generation failed".to_string(),
+            },
+            AuthError::UsernameTaken => ApiErr {
+                status: StatusCode::CONFLICT,
+                message: "UserName is already taken".to_string(),
+            },
+            AuthError::EmailTaken => ApiErr {
+                status: StatusCode::CONFLICT,
+                message: "email is already taken".to_string(),
             },
         }
     }

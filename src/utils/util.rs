@@ -2,6 +2,7 @@ use bcrypt::{BcryptError, DEFAULT_COST, hash, verify};
 use chrono::{Duration, Utc};
 use jsonwebtoken::{encode, EncodingKey, Header};
 use serde::Serialize;
+use uuid::Uuid;
 
 pub fn hash_password(string: String) -> Result<String, BcryptError> {
     hash(string, DEFAULT_COST)
@@ -18,14 +19,14 @@ pub struct Claims {
 }
 const SECRET: &[u8] = b"xpradx";
 
-pub fn generate_access_token(user_id: String) -> Result<String, jsonwebtoken::errors::Error> {
+pub fn generate_access_token(user_id: &Uuid) -> Result<String, jsonwebtoken::errors::Error> {
     let expiration = Utc::now()
         .checked_add_signed(Duration::minutes(60))
         .unwrap()
         .timestamp() as usize;
 
     let claims = Claims {
-        sub: user_id,
+        sub: user_id.to_string(),
         exp: expiration,
     };
 
