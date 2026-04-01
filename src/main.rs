@@ -21,6 +21,16 @@ fn init_tracing() {
         .init();
 }
 
+// POST   /auth/signup ✅
+// POST   /auth/login ✅
+// POST   /auth/refresh
+
+// GET    /user/me        (protected)
+// PUT    /user/update    (protected)
+
+// GET    /health
+// GET    /metrics
+
 #[tokio::main]
 async fn main() {
     dotenv::dotenv().ok();

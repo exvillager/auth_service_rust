@@ -1,11 +1,14 @@
 use serde::Serialize;
-use tracing;
+use tracing::{self};
 use uuid::Uuid;
 
 use crate::{
     models::user::User,
     repository::auth as auth_repo,
-    utils::{auth_error::AuthError, util},
+    utils::{
+        auth_error::AuthError,
+        util::{self, Token},
+    },
 };
 
 #[derive(Serialize)]
@@ -13,6 +16,7 @@ pub struct LoginResult {
     pub user_id: String,
     pub username: String,
     pub access_token: String,
+    pub refresh_token: String,
 }
 
 pub async fn login(username: String, password: String) -> Result<LoginResult, AuthError> {
@@ -33,7 +37,10 @@ pub async fn login(username: String, password: String) -> Result<LoginResult, Au
         return Err(AuthError::InvalidCredentials);
     }
 
-    let token = util::generate_access_token(&user.id).map_err(|err| {
+    let Token {
+        access_token,
+        refresh_token,
+    } = util::generate_access_and_refresh_token(&user.id).map_err(|err| {
         tracing::error!(error = ?err,"error during generating access token: {:?}", err);
         AuthError::TokenGenerationError
     })?;
@@ -41,7 +48,8 @@ pub async fn login(username: String, password: String) -> Result<LoginResult, Au
     Ok(LoginResult {
         user_id: user.id.to_string(),
         username: user.username,
-        access_token: token,
+        access_token: access_token,
+        refresh_token: refresh_token,
     })
 }
 
@@ -104,6 +112,44 @@ pub async fn register(
     Ok(RegisterResult {
         id: user.id.to_string(),
         email: user.email,
+    })
+}
+
+#[derive(Serialize)]
+pub struct RefreshResult {
+    pub access_token: String,
+    pub refresh_token: String,
+}
+pub async fn refresh_token(old_token: String) -> Result<RefreshResult, AuthError> {
+    let claims = util::decode_token(&old_token).await.map_err(|err| {
+        tracing::error!(error = ?err,"error during decoding refresh token: {:?}", err);
+        AuthError::RefreshToken
+    })?;
+
+    let Token {
+        access_token,
+        refresh_token,
+    } = util::generate_access_and_refresh_token(&claims.sub).map_err(|err| {
+        tracing::error!(error = ?err, "Token generation failed");
+        AuthError::TokenGenerationError
+    })?;
+
+    // update user's refresh token
+    auth_repo::rotate_refresh_token(&claims.sub, &old_token, &refresh_token)
+        .await
+        .map_err(|err| {
+            match err {
+                sqlx::Error::RowNotFound => AuthError::InvalidToken,
+                _ => {
+                    tracing::error!(%err, "DB error during rotation");
+                    AuthError::DatabaseError
+                }
+            }
+        });
+
+    Ok(RefreshResult {
+        access_token,
+        refresh_token,
     })
 }
 

@@ -28,6 +28,8 @@ pub enum AuthError {
     TokenGenerationError,
     UsernameTaken,
     EmailTaken,
+    RefreshToken,
+    InvalidToken,
 }
 
 impl From<AuthError> for ApiErr {
@@ -68,6 +70,14 @@ impl From<AuthError> for ApiErr {
             AuthError::EmailTaken => ApiErr {
                 status: StatusCode::CONFLICT,
                 message: "email is already taken".to_string(),
+            },
+            AuthError::RefreshToken => ApiErr {
+                status: StatusCode::INTERNAL_SERVER_ERROR,
+                message: "Error during decoding refresh toekn".to_string(),
+            },
+            AuthError::InvalidToken => ApiErr {
+                status: StatusCode::BAD_REQUEST,
+                message: "Invalid token".to_string(),
             },
         }
     }

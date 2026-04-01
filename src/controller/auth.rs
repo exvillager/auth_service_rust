@@ -1,11 +1,10 @@
 use axum::extract::Path;
 use axum::{Json, http::StatusCode};
 use serde::{Deserialize, Serialize};
-use serde_json::{Value, json};
 use uuid::Uuid;
 
 use crate::models::user::User;
-use crate::service::auth::{self as auth_service, LoginResult, RegisterResult};
+use crate::service::auth::{self as auth_service, LoginResult, RefreshResult, RegisterResult};
 use crate::utils::api_response::ApiResponse;
 use crate::utils::auth_error::ApiErr;
 
@@ -48,17 +47,32 @@ pub async fn register(
     })
 }
 
+struct RefreshTokenBody {
+    refresh_token: String,
+}
+pub async fn refresh_token(
+    Json(body): Json<RefreshTokenBody>,
+) -> Result<ApiResponse<RefreshResult>, ApiErr> {
+    let refresh_token = body.refresh_token;
+
+    let result = auth_service::refresh_token(refresh_token)
+        .await
+        .map_err(ApiErr::from)?;
+
+    Ok(ApiResponse {
+        status: StatusCode::OK,
+        message: "refresh token refreshed successfully",
+        data: result,
+    })
+}
+
 #[derive(Serialize)]
 pub struct DeleteUserResponse {
     id: String,
 }
 
-pub async fn delete_user(
-    Path(id): Path<Uuid>,  
-) -> Result<ApiResponse<DeleteUserResponse>, ApiErr> {
-    let deleted_user = auth_service::delete_user(id)
-        .await
-        .map_err(ApiErr::from)?;
+pub async fn delete_user(Path(id): Path<Uuid>) -> Result<ApiResponse<DeleteUserResponse>, ApiErr> {
+    let deleted_user = auth_service::delete_user(id).await.map_err(ApiErr::from)?;
 
     Ok(ApiResponse {
         status: StatusCode::OK,
