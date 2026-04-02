@@ -89,12 +89,8 @@ pub async fn list_users() -> Result<Vec<User>, sqlx::Error> {
     let users = sqlx::query_as::<_, User>(
         r#"
                 SELECT
-                    id,
-                    username,
-                    email,
-                    password,
-                    created_at
-                FROM "users"
+                    *
+                FROM "users";
                 "#,
     )
     .fetch_all(pool)
@@ -164,6 +160,34 @@ pub async fn rotate_refresh_token(
     .bind(user_id)
     .bind(old_token)
     .bind(new_token)
+    .fetch_one(pool)
+    .await?;
+
+    Ok(updated)
+}
+
+#[derive(sqlx::FromRow)]
+pub struct UpdatedUser {
+    pub id: Uuid,
+    pub username: String,
+    pub refresh_token: Option<String>,
+}
+pub async fn update_refresh_tokem(
+    user_id: &Uuid,
+    new_refresh_token: &str,
+) -> Result<UpdatedUser, sqlx::Error> {
+    let pool = db::get();
+
+    let updated = sqlx::query_as::<_, UpdatedUser>(
+        r#"
+            UPDATE users
+            SET refresh_token = $2
+            WHERE id = $1
+            RETURNING id,username,refresh_token
+        "#,
+    )
+    .bind(user_id)
+    .bind(new_refresh_token)
     .fetch_one(pool)
     .await?;
 

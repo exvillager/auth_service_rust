@@ -12,7 +12,7 @@ pub fn verify_pass(password: String, hashed_pass: String) -> Result<bool, Bcrypt
     verify(password, &hashed_pass)
 }
 
-#[derive(Serialize,Deserialize)]
+#[derive(Serialize,Deserialize,Clone)]
 pub struct Claims {
     pub sub: Uuid,
     pub exp: usize,

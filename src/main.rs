@@ -6,6 +6,7 @@ mod repository;
 mod routes;
 mod service;
 mod utils;
+mod middleware;
 
 use app::create_app;
 

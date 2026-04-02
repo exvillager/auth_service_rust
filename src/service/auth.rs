@@ -45,6 +45,14 @@ pub async fn login(username: String, password: String) -> Result<LoginResult, Au
         AuthError::TokenGenerationError
     })?;
 
+    // update refresh token in db
+    auth_repo::update_refresh_tokem(&user.id, &refresh_token)
+        .await
+        .map_err(|err| {
+            tracing::error!(error = ?err,"DB error during adding refresh token in users DB {:?}", err);
+            AuthError::DatabaseError
+        })?;
+
     Ok(LoginResult {
         user_id: user.id.to_string(),
         username: user.username,
@@ -137,15 +145,16 @@ pub async fn refresh_token(old_token: String) -> Result<RefreshResult, AuthError
     // update user's refresh token
     auth_repo::rotate_refresh_token(&claims.sub, &old_token, &refresh_token)
         .await
-        .map_err(|err| {
-            match err {
-                sqlx::Error::RowNotFound => AuthError::InvalidToken,
-                _ => {
-                    tracing::error!(%err, "DB error during rotation");
-                    AuthError::DatabaseError
-                }
+          .map_err(|err| match err {
+            sqlx::Error::RowNotFound => {
+                tracing::warn!(user_id = %claims.sub, "Refresh token mismatch — possible token reuse");
+                AuthError::RefreshTokenMismatch
             }
-        });
+            _ => {
+                tracing::error!(%err, "DB error during token rotation");
+                AuthError::DatabaseError
+            }
+        })?;
 
     Ok(RefreshResult {
         access_token,

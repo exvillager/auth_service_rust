@@ -14,8 +14,9 @@ pub fn routes() -> Router {
         .route("/", get(home))
         .route("/login", post(auth::login))
         .route("/register", post(auth::register))
-        .route("/list", get(auth::list_users))
         .route("/delete/:id", delete(auth::delete_user))
+        .route("/refresh", post(auth::refresh_token))
+        .route("/list", get(auth::list_users))
         .layer(
             TraceLayer::new_for_http()
                 .make_span_with(|request: &axum::http::Request<_>| {

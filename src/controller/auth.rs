@@ -14,7 +14,7 @@ pub struct LoginRequest {
     pub password: String,
 }
 
-pub async fn login(Json(body): Json<LoginRequest>) -> Result<ApiResponse<LoginResult>, ApiErr> {
+    pub async fn login(Json(body): Json<LoginRequest>) -> Result<ApiResponse<LoginResult>, ApiErr> {
     let result = auth_service::login(body.username, body.password)
         .await
         .map_err(ApiErr::from)?;
@@ -47,8 +47,9 @@ pub async fn register(
     })
 }
 
-struct RefreshTokenBody {
-    refresh_token: String,
+#[derive(Deserialize)]
+pub struct RefreshTokenBody {
+    pub refresh_token: String,
 }
 pub async fn refresh_token(
     Json(body): Json<RefreshTokenBody>,
