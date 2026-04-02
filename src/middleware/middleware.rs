@@ -7,7 +7,7 @@ use axum::{
 
 use crate::utils::{
     auth_error::{ApiErr, AuthError},
-    util,
+    util::{self, ACCESS_SECRET},
 };
 
 pub async fn auth_check(
@@ -39,9 +39,9 @@ pub async fn auth_check(
         .or(cookie_token)
         .ok_or(AuthError::Unauthorized)?;
 
-    let decoded_token = util::decode_token(&token).await.map_err(|err| {
+    let decoded_token = util::decode_token(&token,ACCESS_SECRET).await.map_err(|err| {
         tracing::error!(error = ?err,"error during decoding token: {:?}", err);
-        AuthError::RefreshToken
+        AuthError::AccessTokenError
     })?;
 
     req.extensions_mut().insert(decoded_token);

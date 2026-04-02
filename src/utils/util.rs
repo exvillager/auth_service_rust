@@ -17,8 +17,8 @@ pub struct Claims {
     pub sub: Uuid,
     pub exp: usize,
 }
-const SECRET: &[u8] = b"xpradx";
-const REFRESH_TOKEN_SECRET: &[u8] = b"refreshbro";
+pub const ACCESS_SECRET: &[u8] = b"xpradx";
+pub const REFRESH_TOKEN_SECRET: &[u8] = b"refreshbro";
 
 pub struct Token {
     pub access_token: String,
@@ -41,7 +41,7 @@ pub fn generate_access_and_refresh_token(
     let access_token = encode(
         &Header::default(),
         &access_claims,
-        &EncodingKey::from_secret(SECRET),
+        &EncodingKey::from_secret(ACCESS_SECRET),
     )?;
 
     let refresh_exp = Utc::now()
@@ -66,10 +66,10 @@ pub fn generate_access_and_refresh_token(
     })
 }
 
-pub async fn decode_token(token: &str) -> Result<Claims, jsonwebtoken::errors::Error> {
+pub async fn decode_token(token: &str, secret:&[u8] ) -> Result<Claims, jsonwebtoken::errors::Error> {
     let token_data = decode(
         token,
-        &DecodingKey::from_secret(REFRESH_TOKEN_SECRET),
+        &DecodingKey::from_secret(secret),
         &Validation::default(),
     )?;
     Ok(token_data.claims)

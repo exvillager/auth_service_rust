@@ -32,6 +32,7 @@ pub enum AuthError {
     RefreshTokenMismatch,
     InvalidToken,
     Unauthorized,
+    AccessTokenError,
 }
 
 impl From<AuthError> for ApiErr {
@@ -88,6 +89,10 @@ impl From<AuthError> for ApiErr {
             AuthError::Unauthorized => ApiErr {
                 status: StatusCode::UNAUTHORIZED,
                 message: "expired or invalid token".to_string(),
+            },
+            AuthError::AccessTokenError => ApiErr {
+                status: StatusCode::INTERNAL_SERVER_ERROR,
+                message: "Error during decoding access token".to_string(),
             },
         }
     }

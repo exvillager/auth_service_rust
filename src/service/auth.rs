@@ -7,7 +7,7 @@ use crate::{
     repository::auth as auth_repo,
     utils::{
         auth_error::AuthError,
-        util::{self, Token},
+        util::{self, REFRESH_TOKEN_SECRET, Token},
     },
 };
 
@@ -129,7 +129,7 @@ pub struct RefreshResult {
     pub refresh_token: String,
 }
 pub async fn refresh_token(old_token: String) -> Result<RefreshResult, AuthError> {
-    let claims = util::decode_token(&old_token).await.map_err(|err| {
+    let claims = util::decode_token(&old_token,REFRESH_TOKEN_SECRET).await.map_err(|err| {
         tracing::error!(error = ?err,"error during decoding refresh token: {:?}", err);
         AuthError::RefreshToken
     })?;
