@@ -1,6 +1,7 @@
 mod app;
 mod config;
 mod controller;
+mod dto;
 mod middleware;
 mod models;
 mod repository;
@@ -12,10 +13,7 @@ use app::create_app;
 use axum::Json;
 use serde::Serialize;
 
-use crate::{
-    config::db::{self, connect_db},
-    utils::{api_response::ApiResponse, auth_error::ApiErr},
-};
+use crate::config::{db::{self, connect_db}, envs::init_env};
 
 use tracing_subscriber::{EnvFilter, fmt};
 
@@ -26,16 +24,6 @@ fn init_tracing() {
         .compact()
         .init();
 }
-
-// POST   /auth/signup ✅
-// POST   /auth/login ✅
-// POST   /auth/refresh ✅
-
-// GET    /user/me ✅       (protected)
-// PUT    /user/update ✅   (protected)
-
-// GET    /health ✅
-// GET    /metrics
 
 #[derive(Serialize)]
 pub struct HealthResponse {
@@ -65,6 +53,7 @@ pub async fn health_check() -> Json<HealthResponse> {
 #[tokio::main]
 async fn main() {
     dotenv::dotenv().ok();
+    init_env();
     init_tracing();
     let pool = connect_db().await.expect("DB connection failed");
     crate::config::db::init(pool);

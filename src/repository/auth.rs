@@ -1,9 +1,6 @@
 use uuid::Uuid;
 
-use crate::{
-    config::db,
-    models::user::{self, User},
-};
+use crate::{config::db, dto::{auth::RegisteredUser, user::{DeletedUser, ListUser}}, models::user::User};
 
 pub async fn find_user(username: &str) -> Result<Option<User>, sqlx::Error> {
     let pool = db::get();
@@ -39,14 +36,14 @@ pub async fn check_user_exists(username: &str, email: &str) -> Result<UserExiste
     Ok(result)
 }
 
-pub async fn create_user(email: &str, username: &str, password: &str) -> Result<User, sqlx::Error> {
+pub async fn create_user(email: &str, username: &str, password: &str) -> Result<RegisteredUser, sqlx::Error> {
     let pool = db::get();
-    let created_user = sqlx::query_as::<_, User>(
+    let created_user = sqlx::query_as::<_, RegisteredUser>(
         r#"
-                    INSERT INTO "users" (email, username, password)
-                    VALUES ($1, $2, $3)
-                    RETURNING id, email, username, password, created_at
-                    "#,
+            INSERT INTO "users" (email, username, password)
+            VALUES ($1, $2, $3)
+            RETURNING id, email, username, created_at
+        "#,
     )
     .bind(email)
     .bind(username)
@@ -57,24 +54,14 @@ pub async fn create_user(email: &str, username: &str, password: &str) -> Result<
     Ok(created_user)
 }
 
-pub async fn find_user_by_id(user_id: &Uuid) -> Result<User, sqlx::Error> {
+
+pub async fn delete_user(user_id: &Uuid) -> Result<DeletedUser, sqlx::Error> {
     let pool = db::get();
-
-    let user = sqlx::query_as::<_, User>("SELECT * FROM users WHERE id = $1")
-        .bind(user_id)
-        .fetch_one(pool)
-        .await?;
-
-    Ok(user)
-}
-
-pub async fn delete_user(user_id: &Uuid) -> Result<User, sqlx::Error> {
-    let pool = db::get();
-    let deleted_user = sqlx::query_as::<_, User>(
+    let deleted_user = sqlx::query_as::<_, DeletedUser>(
         r#"
                 DELETE FROM "users"
                 WHERE id = $1
-                RETURNING id, username, email, password, created_at
+                RETURNING id, username
                 "#,
     )
     .bind(user_id)
@@ -84,9 +71,9 @@ pub async fn delete_user(user_id: &Uuid) -> Result<User, sqlx::Error> {
     Ok(deleted_user)
 }
 
-pub async fn list_users() -> Result<Vec<User>, sqlx::Error> {
+pub async fn list_users() -> Result<Vec<ListUser>, sqlx::Error> {
     let pool = db::get();
-    let users = sqlx::query_as::<_, User>(
+    let users = sqlx::query_as::<_, ListUser>(
         r#"
                 SELECT
                     *
@@ -98,7 +85,43 @@ pub async fn list_users() -> Result<Vec<User>, sqlx::Error> {
     Ok(users)
 }
 
-pub async fn check_refresh_token_valid(
+
+pub async fn rotate_refresh_token(
+    user_id: &Uuid,
+    old_token: &str,
+    new_token: &str,
+) -> Result<User, sqlx::Error> {
+    let pool = db::get();
+
+    let updated = sqlx::query_as(
+        r#"
+                UPDATE users
+                SET refresh_token = $3
+                WHERE id = $1 AND refresh_token = $2
+                RETURNING *
+                "#,
+    )
+    .bind(user_id)
+    .bind(old_token)
+    .bind(new_token)
+    .fetch_one(pool)
+    .await?;
+
+    Ok(updated)
+}
+
+pub async fn _find_user_by_id(user_id: &Uuid) -> Result<User, sqlx::Error> {
+    let pool = db::get();
+
+    let user = sqlx::query_as::<_, User>("SELECT * FROM users WHERE id = $1")
+        .bind(user_id)
+        .fetch_one(pool)
+        .await?;
+
+    Ok(user)
+}
+
+pub async fn _check_refresh_token_valid(
     user_id: &Uuid,
     refresh_token: &str,
 ) -> Result<bool, sqlx::Error> {
@@ -120,7 +143,7 @@ pub async fn check_refresh_token_valid(
     Ok(exists.0)
 }
 
-pub async fn update_user_refresh_token(
+pub async fn _update_user_refresh_token(
     user_id: &Uuid,
     refresh_token: &str,
 ) -> Result<User, sqlx::Error> {
@@ -136,30 +159,6 @@ pub async fn update_user_refresh_token(
     )
     .bind(user_id)
     .bind(refresh_token)
-    .fetch_one(pool)
-    .await?;
-
-    Ok(updated)
-}
-
-pub async fn rotate_refresh_token(
-    user_id: &Uuid,
-    old_token: &str,
-    new_token: &str,
-) -> Result<User, sqlx::Error> {
-    let pool = db::get();
-
-    let updated = sqlx::query_as(
-        r#"
-                UPDATE users
-                SET refresh_token = $3
-                WHERE id = $1 AND refresh_token = $2
-                RETURNING *
-                "#,
-    )
-    .bind(user_id)
-    .bind(old_token)
-    .bind(new_token)
     .fetch_one(pool)
     .await?;
 

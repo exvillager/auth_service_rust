@@ -1,7 +1,7 @@
 use uuid::Uuid;
 
 use crate::{
-    controller::user::{GetUserResponse, UpdateUserRequest, UpdatedUserResponse},
+    dto::user::{GetUserResponse, UpdateUserRequest, UpdatedUserResponse},
     repository::user as user_repo,
     utils::auth_error::AuthError,
 };

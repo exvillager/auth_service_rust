@@ -1,12 +1,12 @@
-use std::env;
-use std::sync::OnceLock;
+    use std::sync::OnceLock;
 use sqlx::{Pool, Postgres, postgres::PgPoolOptions};
+
+use crate::config::envs::get_env;
 
 static POOL: OnceLock<Pool<Postgres>> = OnceLock::new();
 
 pub async fn connect_db() -> Result<Pool<Postgres>, sqlx::Error> {
-    let database_url = env::var("DATABASE_URL")
-        .expect("DATABASE_URL must be set");
+    let database_url = &get_env().database_url;
 
     let pool = PgPoolOptions::new()
         .max_connections(5)

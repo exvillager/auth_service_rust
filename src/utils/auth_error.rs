@@ -80,11 +80,11 @@ impl From<AuthError> for ApiErr {
                 message: "Error during decoding refresh toekn".to_string(),
             },
             AuthError::InvalidToken => ApiErr {
-                status: StatusCode::BAD_REQUEST,
+                status: StatusCode::UNAUTHORIZED,
                 message: "Invalid token".to_string(),
             },
             AuthError::RefreshTokenMismatch => ApiErr {
-                status: StatusCode::INTERNAL_SERVER_ERROR,
+                status: StatusCode::UNAUTHORIZED,
                 message: "Refresh token mismatch or invalid".to_string(),
             },
             AuthError::Unauthorized => ApiErr {
@@ -92,11 +92,11 @@ impl From<AuthError> for ApiErr {
                 message: "expired or invalid token".to_string(),
             },
             AuthError::AccessTokenError => ApiErr {
-                status: StatusCode::INTERNAL_SERVER_ERROR,
+                status: StatusCode::UNAUTHORIZED,
                 message: "Error during decoding access token".to_string(),
             },
             AuthError::NothingToUpdate => ApiErr {
-                status: StatusCode::OK,
+                status: StatusCode::BAD_REQUEST,
                 message: "Nothing to update".to_string(),
             },
         }

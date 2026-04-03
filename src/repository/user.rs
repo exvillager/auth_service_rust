@@ -3,7 +3,7 @@ use uuid::Uuid;
 
 use crate::{
     config::db,
-    controller::user::{GetUserResponse, UpdateUserRequest, UpdatedUserResponse},
+    dto::user::{GetUserResponse, UpdateUserRequest, UpdatedUserResponse},
 };
 
 pub async fn get_user_by_id(user_id: &Uuid) -> Result<GetUserResponse, sqlx::Error> {
@@ -30,7 +30,7 @@ pub async fn update_user(user_id:&Uuid,body:UpdateUserRequest) -> Result<Updated
     
     builder.push(" WHERE id = ");
     builder.push_bind(user_id);
-    builder.push(" RETURNING id, username");
+    builder.push(" RETURNING id, email, username, created_at, updated_at");
     
     builder.build_query_as::<UpdatedUserResponse>()
         .fetch_one(pool)

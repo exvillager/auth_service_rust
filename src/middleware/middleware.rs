@@ -5,9 +5,12 @@ use axum::{
     response::Response,
 };
 
-use crate::utils::{
-    auth_error::{ApiErr, AuthError},
-    util::{self, ACCESS_SECRET},
+use crate::{
+    config::envs::get_env,
+    utils::{
+        auth_error::{ApiErr, AuthError},
+        util::{self},
+    },
 };
 
 pub async fn auth_check(
@@ -39,10 +42,11 @@ pub async fn auth_check(
         .or(cookie_token)
         .ok_or(AuthError::Unauthorized)?;
 
-    let decoded_token = util::decode_token(&token,ACCESS_SECRET).await.map_err(|err| {
-        tracing::error!(error = ?err,"error during decoding token: {:?}", err);
-        AuthError::AccessTokenError
-    })?;
+    let decoded_token = util::decode_token(&token, get_env().access_token_secret.as_bytes())
+        .map_err(|err| {
+            tracing::error!(error = ?err,"error during decoding token: {:?}", err);
+            AuthError::AccessTokenError
+        })?;
 
     req.extensions_mut().insert(decoded_token);
 
