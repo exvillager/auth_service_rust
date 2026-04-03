@@ -33,6 +33,7 @@ pub enum AuthError {
     InvalidToken,
     Unauthorized,
     AccessTokenError,
+    NothingToUpdate,
 }
 
 impl From<AuthError> for ApiErr {
@@ -93,6 +94,10 @@ impl From<AuthError> for ApiErr {
             AuthError::AccessTokenError => ApiErr {
                 status: StatusCode::INTERNAL_SERVER_ERROR,
                 message: "Error during decoding access token".to_string(),
+            },
+            AuthError::NothingToUpdate => ApiErr {
+                status: StatusCode::OK,
+                message: "Nothing to update".to_string(),
             },
         }
     }

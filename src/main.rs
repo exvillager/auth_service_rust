@@ -1,16 +1,21 @@
 mod app;
 mod config;
 mod controller;
+mod middleware;
 mod models;
 mod repository;
 mod routes;
 mod service;
 mod utils;
-mod middleware;
 
 use app::create_app;
+use axum::Json;
+use serde::Serialize;
 
-use crate::config::db::connect_db;
+use crate::{
+    config::db::{self, connect_db},
+    utils::{api_response::ApiResponse, auth_error::ApiErr},
+};
 
 use tracing_subscriber::{EnvFilter, fmt};
 
@@ -24,13 +29,38 @@ fn init_tracing() {
 
 // POST   /auth/signup ✅
 // POST   /auth/login ✅
-// POST   /auth/refresh
+// POST   /auth/refresh ✅
 
-// GET    /user/me        (protected)
-// PUT    /user/update    (protected)
+// GET    /user/me ✅       (protected)
+// PUT    /user/update ✅   (protected)
 
-// GET    /health
+// GET    /health ✅
 // GET    /metrics
+
+#[derive(Serialize)]
+pub struct HealthResponse {
+    pub status: &'static str,
+    pub db: &'static str,
+    pub version: &'static str,
+}
+pub async fn health_check() -> Json<HealthResponse> {
+    let db_status = match db::get().acquire().await {
+        Ok(_) => "up",
+        Err(_) => "down"
+    };
+    
+    let status = if db_status == "up" {
+        "ok"
+    } else {
+        "degraded"
+    };
+    
+    Json(HealthResponse {
+        status,
+        db: db_status,
+        version: env!("CARGO_PKG_VERSION"),
+    })
+}
 
 #[tokio::main]
 async fn main() {
