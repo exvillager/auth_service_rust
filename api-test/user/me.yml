@@ -1,0 +1,26 @@
+name: Get Me
+description: Get the currently authenticated user's profile
+version: 1.0.0
+baseUrl: http://localhost:3000
+apis:
+  - name: Get Me - success
+    run: true
+    includeCookie: true
+    url: /api/v1/users/me
+    headers:
+      Method: GET
+
+  - name: Get Me - no token
+    run: true
+    includeCookie: false
+    url: /api/v1/users/me
+    headers:
+      Method: GET
+
+  - name: Get Me - invalid token
+    run: true
+    includeCookie: false
+    url: /api/v1/users/me
+    headers:
+      Method: GET
+      Authorization: Bearer invalid.token.here

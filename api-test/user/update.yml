@@ -1,0 +1,33 @@
+name: Update User
+description: Update the authenticated user's profile
+version: 1.0.0
+baseUrl: http://localhost:3000
+apis:
+  - name: Update Username - success
+    run: true
+    includeCookie: true
+    url: /api/v1/users/update
+    headers:
+      Method: PUT
+      Content-Type: application/json
+    body:
+      username: newusername
+
+  - name: Update - no fields (empty body)
+    run: true
+    includeCookie: true
+    url: /api/v1/users/update
+    headers:
+      Method: PUT
+      Content-Type: application/json
+    body: {}
+
+  - name: Update - no token
+    run: true
+    includeCookie: false
+    url: /api/v1/users/update
+    headers:
+      Method: PUT
+      Content-Type: application/json
+    body:
+      username: newusername

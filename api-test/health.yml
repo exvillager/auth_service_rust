@@ -1,0 +1,10 @@
+name: Health Check
+description: Check server and DB status
+version: 1.0.0
+baseUrl: http://localhost:3000
+apis:
+  - name: Health Check
+    run: true
+    url: /health
+    headers:
+      Method: GET

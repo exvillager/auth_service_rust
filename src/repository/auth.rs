@@ -171,7 +171,7 @@ pub struct UpdatedUser {
     pub username: String,
     pub refresh_token: Option<String>,
 }
-pub async fn update_refresh_tokem(
+pub async fn update_refresh_token(
     user_id: &Uuid,
     new_refresh_token: &str,
 ) -> Result<UpdatedUser, sqlx::Error> {

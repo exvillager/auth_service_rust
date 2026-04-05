@@ -20,7 +20,7 @@ pub async fn get_user_by_id(user_id: &Uuid) -> Result<GetUserResponse, sqlx::Err
 pub async fn update_user(user_id:&Uuid,body:UpdateUserRequest) -> Result<UpdatedUserResponse, sqlx::Error> {
     let pool = db::get();
     
-    let mut builder = QueryBuilder::new("UPDATE users SET");
+    let mut builder = QueryBuilder::new("UPDATE users SET ");
     let mut separated = builder.separated(", ");
     
     if let Some(username) = body.username {

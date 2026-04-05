@@ -1,16 +1,13 @@
 use axum::{
-    extract::Request,
-    http::{HeaderMap, header::AUTHORIZATION},
-    middleware::Next,
-    response::Response,
+    Extension, extract::{Path, Request}, http::{HeaderMap, StatusCode, header::AUTHORIZATION}, middleware::Next, response::Response
 };
+use uuid::Uuid;
 
 use crate::{
-    config::envs::get_env,
-    utils::{
+    config::envs::get_env, repository::auth as auth_repo, utils::{
         auth_error::{ApiErr, AuthError},
-        util::{self},
-    },
+        util::{self, Claims},
+    }
 };
 
 pub async fn auth_check(
@@ -49,6 +46,25 @@ pub async fn auth_check(
         })?;
 
     req.extensions_mut().insert(decoded_token);
+
+    Ok(next.run(req).await)
+}
+
+pub async fn require_admin(
+    Extension(claims): Extension<Claims>,
+    Path(id): Path<Uuid>,
+    req: Request,
+    next: Next,
+) -> Result<Response, ApiErr> {
+    // check if the requested user and the id that needs to be deleted match
+    let user = auth_repo::_find_user_by_id(&id).await.map_err(|err| {
+        tracing::error!(error = ?err, "error during finding user by id: {:?}", err);
+        AuthError::UserNotFound
+    })?;
+    
+    if user.id != claims.sub {
+        return Err(AuthError::Forbidden.into());
+    }
 
     Ok(next.run(req).await)
 }

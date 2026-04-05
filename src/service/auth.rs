@@ -41,7 +41,7 @@ pub async fn login(username: String, password: String) -> Result<LoginResult, Au
     })?;
 
     // update refresh token in db
-    auth_repo::update_refresh_tokem(&user.id, &refresh_token)
+    auth_repo::update_refresh_token(&user.id, &refresh_token)
         .await
         .map_err(|err| {
             tracing::error!(error = ?err,"DB error during adding refresh token in users DB {:?}", err);

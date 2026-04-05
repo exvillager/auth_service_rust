@@ -6,6 +6,9 @@ use uuid::Uuid;
 
 use crate::config::envs::{get_env};
 
+const ACCESS_TOKEN_EXPIRY_MINUTES: i64 = 60;
+const REFRESH_TOKEN_EXPIRY_DAYS: i64 = 7;
+
 pub fn hash_password(string: String) -> Result<String, BcryptError> {
     hash(string, DEFAULT_COST)
 }
@@ -29,12 +32,12 @@ pub fn generate_access_and_refresh_token(
     user_id: &Uuid,
 ) -> Result<Token, jsonwebtoken::errors::Error> {
     let access_exp = Utc::now()
-        .checked_add_signed(Duration::minutes(60))
+        .checked_add_signed(Duration::minutes(ACCESS_TOKEN_EXPIRY_MINUTES))
         .unwrap()
         .timestamp() as usize;
 
     let access_claims = Claims {
-        sub: user_id.clone(),
+        sub: *user_id,
         exp: access_exp,
     };
 
@@ -45,12 +48,12 @@ pub fn generate_access_and_refresh_token(
     )?;
 
     let refresh_exp = Utc::now()
-        .checked_add_signed(Duration::days(7))
+        .checked_add_signed(Duration::days(REFRESH_TOKEN_EXPIRY_DAYS))
         .unwrap()
         .timestamp() as usize;
 
     let refresh_claims = Claims {
-        sub: user_id.clone(),
+        sub: *user_id,
         exp: refresh_exp,
     };
 

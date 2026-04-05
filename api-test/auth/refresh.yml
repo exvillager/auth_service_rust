@@ -1,0 +1,22 @@
+name: Refresh Token
+description: Rotate access and refresh tokens using a valid refresh token
+version: 1.0.0
+baseUrl: http://localhost:3000
+apis:
+  - name: Refresh Token - success
+    run: true
+    url: /api/v1/auth/refresh
+    headers:
+      Method: POST
+      Content-Type: application/json
+    body:
+      refresh_token: <paste_refresh_token_here>
+
+  - name: Refresh Token - invalid token
+    run: true
+    url: /api/v1/auth/refresh
+    headers:
+      Method: POST
+      Content-Type: application/json
+    body:
+      refresh_token: invalid.token.here

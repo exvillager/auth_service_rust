@@ -30,10 +30,11 @@ pub enum AuthError {
     EmailTaken,
     RefreshToken,
     RefreshTokenMismatch,
-    InvalidToken,
+    // InvalidToken,
     Unauthorized,
     AccessTokenError,
     NothingToUpdate,
+    Forbidden,
 }
 
 impl From<AuthError> for ApiErr {
@@ -76,13 +77,13 @@ impl From<AuthError> for ApiErr {
                 message: "email is already taken".to_string(),
             },
             AuthError::RefreshToken => ApiErr {
-                status: StatusCode::INTERNAL_SERVER_ERROR,
-                message: "Error during decoding refresh toekn".to_string(),
-            },
-            AuthError::InvalidToken => ApiErr {
                 status: StatusCode::UNAUTHORIZED,
-                message: "Invalid token".to_string(),
+                message: "Invalid or expired refresh token".to_string(),
             },
+            // AuthError::InvalidToken => ApiErr {
+            //     status: StatusCode::UNAUTHORIZED,
+            //     message: "Invalid token".to_string(),
+            // },
             AuthError::RefreshTokenMismatch => ApiErr {
                 status: StatusCode::UNAUTHORIZED,
                 message: "Refresh token mismatch or invalid".to_string(),
@@ -98,6 +99,10 @@ impl From<AuthError> for ApiErr {
             AuthError::NothingToUpdate => ApiErr {
                 status: StatusCode::BAD_REQUEST,
                 message: "Nothing to update".to_string(),
+            },
+            AuthError::Forbidden => ApiErr {
+                status: StatusCode::FORBIDDEN,
+                message: "forbidden".to_string(),
             },
         }
     }
