@@ -1,5 +1,5 @@
 use axum::{
-    Extension, extract::{Path, Request}, http::{HeaderMap, StatusCode, header::AUTHORIZATION}, middleware::Next, response::Response
+    Extension, extract::{Path, Request}, http::{HeaderMap, header::AUTHORIZATION}, middleware::Next, response::Response
 };
 use uuid::Uuid;
 

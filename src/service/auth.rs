@@ -47,6 +47,8 @@ pub async fn login(username: String, password: String) -> Result<LoginResult, Au
             tracing::error!(error = ?err,"DB error during adding refresh token in users DB {:?}", err);
             AuthError::DatabaseError
         })?;
+    
+    tracing::info!("Updated refresh token for user {:?}", user.id);
 
     Ok(LoginResult {
         user_id: user.id.to_string(),

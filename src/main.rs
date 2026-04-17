@@ -18,7 +18,7 @@ use crate::config::{
     envs::init_env,
 };
 
-use tracing_subscriber::{EnvFilter, fmt};
+use tracing_subscriber::{fmt, EnvFilter};
 
 fn init_tracing() {
     fmt()
@@ -55,6 +55,10 @@ async fn main() {
     init_env();
     init_tracing();
     let pool = connect_db().await.expect("DB connection failed");
+    sqlx::migrate!("./migrations")
+        .run(&pool)
+        .await
+        .expect("Migration failed");
     crate::config::db::init(pool);
 
     let app = create_app();
@@ -65,7 +69,7 @@ async fn main() {
         .await
         .expect("error while binding to the port");
 
-    tracing::info!("Server running on http://localhost:{}",port);
+    tracing::info!("Server running on http://localhost:{}", port);
 
     axum::serve(listener, app)
         .await
