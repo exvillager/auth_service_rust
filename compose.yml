@@ -1,0 +1,16 @@
+services:
+  auth:
+    build: .
+    ports:
+      - "3004:3000"
+    env_file:
+        .env
+    environment:
+      RUST_LOG: info
+      DATABASE_URL: sqlite:///app/data/auth_service.db
+    volumes:
+        - "auth-data:/app/data"
+    restart: unless-stopped
+
+volumes:
+  auth-data:
