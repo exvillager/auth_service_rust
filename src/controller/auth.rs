@@ -1,5 +1,5 @@
 use axum::extract::Path;
-use axum::{Json, http::StatusCode};
+use axum::{http::StatusCode, Json};
 use serde::Deserialize;
 use uuid::Uuid;
 
@@ -15,7 +15,7 @@ pub struct LoginRequest {
     pub password: String,
 }
 
-    pub async fn login(Json(body): Json<LoginRequest>) -> Result<ApiResponse<LoginResult>, ApiErr> {
+pub async fn login(Json(body): Json<LoginRequest>) -> Result<ApiResponse<LoginResult>, ApiErr> {
     let result = auth_service::login(body.username, body.password)
         .await
         .map_err(ApiErr::from)?;

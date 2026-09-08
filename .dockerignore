@@ -1,0 +1,8 @@
+target
+.git
+.env
+*.db
+auth_service.db
+api-test
+compose.yml
+Dockerfile
